@@ -27,20 +27,6 @@ def findWifi():
                              interface.transmitPower(), interface.rssi())
     return interface
 
-
-def getDistance(interface):
-    # Assumes measured dbm of -80 at 50 m away from AP
-    # Assumes n = 3
-    rssi = interface.rssi()
-    beta_numerator = float(-80-rssi)
-    beta_denominator = float(10*3)
-    beta = beta_numerator/beta_denominator
-    distanceFromAP = round(((10**beta)*50),4)
-    print "Distance: " + str(distanceFromAP)
-    return (distanceFromAP, rssi, 0)
-
-num_samps = 0
-curAvg = 0
 class DistanceEstimator:
     def __init__(self):
         self.curAvg = 0
@@ -71,7 +57,7 @@ class DistanceEstimator:
 
 
     def getDistanceSim(self, dev_loc, toPrint):
-        # sim_loc at (-8, -4)
+        # sim_loc at (-6, -4)
         sim_x = -6
         sim_y = -4
         (dev_x, dev_y) = dev_loc
@@ -214,7 +200,16 @@ class Localizer:
             plt.savefig("simiter.png")
             plt.show(block=False)
             iterations += 1
-    # Assuming Rayleigh Distribution with std. dev of 1
+
+    '''
+        This function computes the MLE access point coordinate on the grid,
+        assuming distances follow a Rayleigh Distribution with sigma = 1.
+
+        @param distance The measured access point distance
+        @param n A value that determines the size of the returned list
+
+        @return The n coordinates with largest probabilities (n MLE positions)
+    '''
     def determineMLE(self, distance, n):
         sigma = 1
 
@@ -232,20 +227,6 @@ class Localizer:
 
         return heapq.nlargest(n, self.grid, key = lambda x: x[2])
 
-def getEstimatedDistance(interface, curAvg):
-    #Assumes measured dbm of -80 at 50 m away from AP
-    # Assumes n = 3
-    global num_samps, n
-    num_samps+=1
-    rssi = interface.rssi()
-    curAvg = float(rssi+80)/num_samps + curAvg*(num_samps-1)/num_samps
-    A = -1.0/(10*3)*(curAvg)
-    distanceFromAP = round(((10**A)*50), 4)
-    print "Estimated Distance: " + str(distanceFromAP)
-    print "RSSI: " + str(rssi)
-    return (distanceFromAP, rssi, curAvg)
-
-
 '''
 iface = findWifi()
 regDists = []
@@ -253,7 +234,7 @@ estimatedDists = []
 rssis = []
 ap_est = DistanceEstimator()
 num_samps = 0
-while(num_samps < 10):
+while(num_samps < 30):
     time.sleep(3)
     (dist, rssi, _) = ap_est.getDistance(iface, True)
     regDists.append(dist)
@@ -271,7 +252,7 @@ plt.ylabel("Distance (m)")
 plt.show()
 
 plt.figure()
-plt.plot(range(10), regDists, estimatedDists, ".-")
+plt.plot(range(num_samps), regDists, ".-", range(num_samps), estimatedDists, ".-")
 plt.title("Measured Distance vs. Time")
 plt.xlabel("Sample Number")
 plt.ylabel("Measured Distance (m)")
