@@ -56,10 +56,20 @@ class DistanceEstimator:
         return (distanceFromAP, rssi, self.curAvg)
 
 
+    '''
+        Simulates the access point by returning a randomized value determined
+        by sampling from the Rayleigh PDF
+
+        @param dev_loc The location of the measuring device (user)
+        @param toPrint a boolean value to determine whether to print to console
+
+        @return A tuple representing the randomized distance, actual distance,
+                and a constant 0 for consistency.
+    '''
     def getDistanceSim(self, dev_loc, toPrint):
-        # sim_loc at (-6, -4)
-        sim_x = -6
-        sim_y = -4
+        # sim_loc at (6, 4)
+        sim_x = 6
+        sim_y = 4
         (dev_x, dev_y) = dev_loc
         dist = np.sqrt(np.abs(sim_x - dev_x)**2 + np.abs(sim_y - dev_y)**2)
         sigma = dist*np.sqrt(2/np.pi)
@@ -96,6 +106,8 @@ class Localizer:
         ap_est = DistanceEstimator()
         iface = findWifi()
         iterations = 0
+
+        # Currently only runs for 10 iterations
         while iterations < self.numIter:
             input = raw_input("Input movement direction (wasd): ")
 
@@ -227,6 +239,8 @@ class Localizer:
 
         return heapq.nlargest(n, self.grid, key = lambda x: x[2])
 
+
+# Uncomment this section if you want to generate plots of AP distances and RSS
 '''
 iface = findWifi()
 regDists = []
